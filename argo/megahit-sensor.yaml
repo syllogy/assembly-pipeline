@@ -1,0 +1,200 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Sensor
+metadata:
+  name: megahit
+spec:
+  template:
+    serviceAccountName: argo-events-sa
+  dependencies:
+    - name: task
+      eventSourceName: gcp-pubsub-tasks
+      eventName: task
+  triggers:
+    - template:
+        name: webhook-workflow-trigger
+        argoWorkflow:
+          group: argoproj.io
+          version: v1alpha1
+          resource: workflows
+          operation: submit
+          parameters:
+            - src:
+                dependencyName: task
+                dataKey: body.bucket
+              dest: spec.arguments.parameters.0.value
+            - src:
+                dependencyName: task
+                dataKey: body.dir
+              dest: spec.arguments.parameters.1.value
+            - src:
+                dependencyName: task
+                dataKey: body.f1
+              dest: spec.arguments.parameters.2.value
+            - src:
+                dependencyName: task
+                dataKey: body.f2
+              dest: spec.arguments.parameters.3.value
+            - src:
+                dependencyName: task
+                dataKey: body.out
+              dest: spec.arguments.parameters.4.value
+            - src:
+                dependencyName: task
+                dataKey: body.mem
+              dest: spec.arguments.parameters.5.value
+            - src:
+                dependencyName: task
+                dataKey: body.cpu
+              dest: spec.arguments.parameters.6.value
+          source:
+            resource:
+              apiVersion: argoproj.io/v1alpha1
+              kind: Workflow
+              metadata:
+                generateName: megahit-
+                labels:
+                  app: 'megahit'
+              spec:
+                tolerations:
+                - key: cloud.google.com/gke-preemptible
+                  operator: Equal
+                  value: "true"
+                  effect: NoSchedule
+                arguments:
+                  parameters:
+                    - name: bucket
+                      value: 'gs://kuku'
+                    - name: dir
+                      value: 'task1'
+                    - name: f1
+                      value: 'r3_1.fa'
+                    - name: f2
+                      value: 'r3_2.fa'
+                    - name: out
+                      value: 'out'
+                    - name: mem
+                      value: '10000000000'
+                    - name: cpu
+                      value: '3'
+                entrypoint: run
+                volumes:
+                -  name: bucket
+                   hostPath:
+                     path: /mnt/disks/bucket
+                templates:
+                  - name: run
+                    steps:
+                    - - name: stat-gcs-object
+                        template: stat-gcs-object
+                        continueOn:
+                          failed: true
+                    - - name: megahit
+                        template: megahit
+                        when: "{{steps.stat-gcs-object.exitCode}} == 1"
+                      - name: megahit-continue
+                        template: megahit-continue
+                        when: "{{steps.stat-gcs-object.exitCode}} == 0"
+                  - name: stat-gcs-object
+                    inputs:
+                      parameters:
+                        - name: object
+                          value: 'gs://{{workflow.parameters.bucket}}/{{workflow.parameters.dir}}/{{workflow.parameters.out}}/'
+                    container:
+                      name: cloud-sdk
+                      image: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
+                      resources:
+                        requests:
+                          memory: 256Mi
+                          cpu: 200m
+                      command:
+                        - gsutil
+                      args:
+                        - stat
+                        - '{{inputs.parameters.object}}'
+                  - name: megahit
+                    podSpecPatch: |
+                      containers:
+                        - name: main
+                          resources:
+                            requests:
+                              memory: '{{inputs.parameters.mem}}'
+                              cpu: '{{inputs.parameters.cpu}}'
+                    inputs:
+                      parameters:
+                        - name: f1
+                          value: '/mnt/{{workflow.parameters.dir}}/{{workflow.parameters.f1}}'
+                        - name: f2
+                          value: '/mnt/{{workflow.parameters.dir}}/{{workflow.parameters.f2}}'
+                        - name: out
+                          value: '/mnt/{{workflow.parameters.dir}}/{{workflow.parameters.out}}'
+                        - name: mem
+                          value: '{{workflow.parameters.mem}}'
+                        - name: cpu
+                          value: '{{workflow.parameters.cpu}}'
+                    podSpecPatch: '{"containers":[{"name":"main","resources":{"requests":{"memory":"{{inputs.parameters.mem}}","cpu":"{{inputs.parameters.cpu}}"}}}]}'
+                    container:
+                      name: megahit
+                      image: 'MEGAHIT_IMAGE'
+                      volumeMounts:
+                      - name: bucket
+                        mountPath: /mnt
+                      command:
+                        - megahit
+                      args:
+                        - --verbose
+                        - -1
+                        - '{{inputs.parameters.f1}}'
+                        - -2
+                        - '{{inputs.parameters.f2}}'
+                        - --num-cpu-threads
+                        - '{{inputs.parameters.cpu}}'
+                        - --memory
+                        - '{{inputs.parameters.mem}}'
+                        - --out-dir
+                        - '{{inputs.parameters.out}}'
+                  - name: megahit-continue
+                    podSpecPatch: |
+                      containers:
+                        - name: main
+                          resources:
+                            requests:
+                              memory: '{{inputs.parameters.mem}}'
+                              cpu: '{{inputs.parameters.cpu}}'
+                    inputs:
+                      parameters:
+                        - name: f1
+                          value: '/mnt/{{workflow.parameters.dir}}/{{workflow.parameters.f1}}'
+                        - name: f2
+                          value: '/mnt/{{workflow.parameters.dir}}/{{workflow.parameters.f2}}'
+                        - name: out
+                          value: '/mnt/{{workflow.parameters.dir}}/{{workflow.parameters.out}}'
+                        - name: mem
+                          value: '{{workflow.parameters.mem}}'
+                        - name: cpu
+                          value: '{{workflow.parameters.cpu}}'
+                    podSpecPatch: '{"containers":[{"name":"main","resources":{"requests":{"memory":"{{inputs.parameters.mem}}","cpu":"{{inputs.parameters.cpu}}"}}}]}'
+                    container:
+                      name: megahit
+                      image: 'MEGAHIT_IMAGE'
+                      volumeMounts:
+                      - name: bucket
+                        mountPath: /mnt
+                      command:
+                        - megahit
+                      args:
+                        - --verbose
+                        - -1
+                        - '{{inputs.parameters.f1}}'
+                        - -2
+                        - '{{inputs.parameters.f2}}'
+                        - --num-cpu-threads
+                        - '{{inputs.parameters.cpu}}'
+                        - --memory
+                        - '{{inputs.parameters.mem}}'
+                        - --out-dir
+                        - '{{inputs.parameters.out}}'
+                        - --continue
+                ttlStrategy:
+                  secondsAfterCompletion: 300
+                podGC:
+                  strategy: OnPodCompletion

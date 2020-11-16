@@ -1,0 +1,52 @@
+apiVersion: argoproj.io/v1alpha1
+kind: EventSource
+metadata:
+  name: gcp-pubsub-errors
+spec:
+  pubSub:
+    task:
+      # jsonBody specifies that all event body payload coming from this
+      # source will be JSON
+      jsonBody: true
+      # id of your project
+      projectID: PROJECT_ID
+      # (optional) id of project for topic, same as projectID by default
+      # topicProjectID: "project-id"
+      # topic name
+      # topic: tasks
+      # subscription ID
+      subscriptionID: argo-errors
+      # (optional) Refers to a k8s scret which contains the credential JSON to access pubsub.
+      # If it is missing, it implicts to use Workload Identity.
+      # credentialSecret:
+      #  name: my-secret
+      #  key: secret-key
+      # Deprecated, legacy approach
+      credentialsFile: ""
+
+# Different logic with different "topic" and "subscriptionID" combination
+#
+# topic provided/existing      subscription provided/existing
+#     yy                       yy     verify if topic matches subsciption's topic
+#     yy                       yn     create sub with given ID
+#     yy                       n-     create or reuse sub with auto generated sub ID
+#     yn                       yn     create topic and sub with auto generated sub ID
+#     yn                       yy     invalid
+#     yn                       n-     create topic, create or reuse sub with auto generated sub ID
+#     n-                       yy     ok
+#     n-                       yn     invalid
+
+
+
+#    example-workload-identity:
+#      # jsonBody specifies that all event body payload coming from this
+#      # source will be JSON
+#      jsonBody: true
+#      # id of your project
+#      projectID: argo-events-XXXXX
+#      # (optional) id of project for topic, same as projectID by default
+#      # topicProjectID: "project-id"
+#      # topic name
+#      topic: test
+#      # Empty credentials file when using Workflow Identity
+#      credentialsFile: ""

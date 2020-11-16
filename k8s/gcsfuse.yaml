@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gcsfuse-config
+  namespace: default
+data:
+  bucket: BUCKET_NAME
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: gcsfuse
+  labels:
+    k8s-app: gcsfuse
+spec:
+  selector:
+    matchLabels:
+      name: gcsfuse
+  template:
+    metadata:
+      labels:
+        name: gcsfuse
+    spec:
+      tolerations:
+      - key: cloud.google.com/gke-preemptible
+        operator: Equal
+        value: "true"
+        effect: NoSchedule
+      containers:
+      - name: gcsfuse
+        securityContext:
+          privileged: true
+          capabilities:
+            add:
+              - SYS_ADMIN
+        image: GCSFUSE_IMAGE
+        imagePullPolicy: Always
+        env:
+          - name: BUCKET
+            valueFrom:
+              configMapKeyRef:
+                name: gcsfuse-config
+                key: bucket
+        command: ["/root/gcsfuse"]
+        args: ["--foreground", "--implicit-dirs", "$(BUCKET)", "/mnt"]
+        lifecycle:
+          preStop:
+            exec:
+              command: ["fusermount", "-u", "/mnt"]
+        volumeMounts:
+        - name: bucket
+          mountPath: /mnt
+          mountPropagation: Bidirectional
+        resources:
+          requests:
+            cpu: 200m
+            memory: 200Mi
+      volumes:
+      - name: bucket
+        hostPath:
+          path: /mnt/disks/bucket

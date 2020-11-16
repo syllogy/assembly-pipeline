@@ -1,0 +1,13 @@
+# general
+export PROJECT_ID=the_project_id
+export REGION=us-west2
+# cluster
+export CLUSTER_NAME=cluster
+export DEFAULT_POOL_MACHINE_TYPE=e2-medium
+export POOL_1_MACHINE_TYPE=e2-standard-4
+export CLUSTER_SA=${CLUSTER_NAME}@${PROJECT_ID}.iam.gserviceaccount.com
+export MASTER_AUTH_NETWORKS=157.22.33.50/32
+# gcsfuse
+export BUCKET_NAME=the_bucket_name
+export GCSFUSE_IMAGE=gcr.io/${PROJECT_ID}/gcsfuse:latest
+export MEGAHIT_IMAGE=gcr.io/${PROJECT_ID}/megahit:v1.2.9
