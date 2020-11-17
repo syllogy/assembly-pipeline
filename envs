@@ -6,7 +6,7 @@ export CLUSTER_NAME=cluster
 export DEFAULT_POOL_MACHINE_TYPE=e2-medium
 export POOL_1_MACHINE_TYPE=e2-standard-4
 export CLUSTER_SA=${CLUSTER_NAME}@${PROJECT_ID}.iam.gserviceaccount.com
-export MASTER_AUTH_NETWORKS=157.22.33.50/32 # IP range for kubectl and helm commands. You can find it by running: curl ifconfig.co
+export MASTER_AUTH_NETWORKS="$(curl ifconfig.co)/32" # IP range for kubectl and helm commands. You can find it for your local machine by running: curl ifconfig.co
 # gcsfuse
 export BUCKET_NAME=the_bucket_name
 export GCSFUSE_IMAGE=gcr.io/${PROJECT_ID}/gcsfuse:latest
