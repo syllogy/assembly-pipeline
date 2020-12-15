@@ -194,7 +194,7 @@ BRAND_ID=$(gcloud alpha iap oauth-brands list \
 gcloud alpha iap oauth-clients create \
 	--project=${PROJECT_ID} \
 	--display_name argo \
-	projects/${PROJECT_ID}/brands/${BRAND_ID}"
+	projects/${PROJECT_ID}/brands/${BRAND_ID}
 
 CLIENT_ID_KEY=$(gcloud alpha iap oauth-clients list \
 	--project=${PROJECT_ID} \

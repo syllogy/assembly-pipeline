@@ -1,5 +1,5 @@
 # general
-export PROJECT_ID=yuval-argo-test
+export PROJECT_ID=yuval-argo-iap
 export REGION=us-west2
 # cluster
 export CLUSTER_NAME=cluster
