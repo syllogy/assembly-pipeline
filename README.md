@@ -25,7 +25,7 @@ Run the install-gcsfuse.sh script to install the gcsfuse daemonset on the cluste
 
 Run the install-argo-es-and-sensors.sh to install the tasks and errors event sources and the megahit sensor.
 
-Creating a task:
+Create a MEGAHIT task. The FASTA filenames provided should be located within the folder specified by "dir":
 
     gcloud pubsub topics publish --project ${PROJECT_ID} --message="{\"bucket\":\"${BUCKET_NAME}\", \"dir\":\"task1\", \"f1\":\"r3_1.fa\", \"f2\":\"r3_2.fa\", \"out\":\"out\", \"mem\":\"10000000000\", \"cpu\":\"3\"}" tasks
 
