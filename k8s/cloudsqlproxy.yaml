@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudsqlproxy
+  labels:
+    app: cloudsqlproxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cloudsqlproxy
+  template:
+    metadata:
+      labels:
+        app: cloudsqlproxy
+    spec:
+      containers:
+      - name: cloudsqlproxy
+        image: gcr.io/cloudsql-docker/gce-proxy:1.17
+        command:
+          - "/cloud_sql_proxy"
+          - "-ip_address_types=PRIVATE"
+          - "-instances=PROJECT_ID:REGION:DB_INSTANCE_NAME=tcp:0.0.0.0:3306"
+        securityContext:
+          runAsNonRoot: true
+        ports:
+        - containerPort: 3306
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cloudsqlproxy
+spec:
+  selector:
+    app: cloudsqlproxy
+  ports:
+    - protocol: TCP
+      port: 3306
+      targetPort: 3306
+---
+apiVersion: v1
+stringData:
+  username: root
+  password: ROOT_PASSWORD
+kind: Secret
+metadata:
+  name: argo-mysql-config
+type: Opaque

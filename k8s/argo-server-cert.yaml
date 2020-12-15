@@ -1,0 +1,7 @@
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: argo
+spec:
+  domains:
+    - ARGO_SERVER_DOMAIN

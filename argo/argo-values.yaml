@@ -1,0 +1,30 @@
+controller:
+  persistence:
+    connectionPool:
+      maxIdleConns: 100
+      maxOpenConns: 0
+    # save the entire workflow into etcd and DB
+    nodeStatusOffLoad: true
+    # enable archiving of old workflows
+    archive: true
+    mysql:
+      host: cloudsqlproxy
+      port: 3306
+      database: argo
+      tableName: argo_workflows
+      # the database secrets must be in the same namespace of the controller
+      userNameSecret:
+        name: argo-mysql-config
+        key: username
+      passwordSecret:
+        name: argo-mysql-config
+        key: password
+
+server:
+  serviceType: NodePort
+  serviceAnnotations:
+    beta.cloud.google.com/backend-config: '{"default": "config-argo-server"}'
+
+useDefaultArtifactRepo: true
+artifactRepository:
+  archiveLogs: true

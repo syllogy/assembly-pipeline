@@ -1,0 +1,64 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Sensor
+metadata:
+  name: busybox
+spec:
+  template:
+    serviceAccountName: argo-events-sa
+  dependencies:
+    - name: task
+      eventSourceName: gcp-pubsub-tasks
+      eventName: task
+  triggers:
+    - template:
+        name: webhook-workflow-trigger
+        argoWorkflow:
+          group: argoproj.io
+          version: v1alpha1
+          resource: workflows
+          operation: submit
+          parameters:
+            - src:
+                dependencyName: task
+                dataKey: body
+              dest: spec.arguments.parameters.0.value
+          source:
+            resource:
+              apiVersion: argoproj.io/v1alpha1
+              kind: Workflow
+              metadata:
+                generateName: busybox-
+                labels:
+                  app: 'busybox'
+              spec:
+                tolerations:
+                - key: cloud.google.com/gke-preemptible
+                  operator: Equal
+                  value: "true"
+                  effect: NoSchedule
+                arguments:
+                  parameters:
+                    - name: body
+                      value: test
+                entrypoint: run
+                templates:
+                  - name: run
+                    steps:
+                    - - name: hello-world
+                        template: busybox
+                  - name: busybox
+                    container:
+                      name: busybox
+                      image: 'gcr.io/google-containers/busybox:latest'
+                      resources:
+                        requests:
+                          memory: 256Mi
+                          cpu: 200m
+                      command:
+                        - echo
+                      args:
+                        - '{{workflow.parameters.body}}'
+                ttlStrategy:
+                  secondsAfterCompletion: 300
+                podGC:
+                  strategy: OnPodCompletion
